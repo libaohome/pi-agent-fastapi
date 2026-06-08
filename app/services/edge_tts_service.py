@@ -22,10 +22,14 @@ async def list_voices(locale: str | None = None) -> list[dict]:
     ]
 
 
-def _resolve_voice(voice: str | None) -> str:
+def resolve_voice(voice: str | None) -> str:
     if voice:
         return voice
     return get_settings().edge_tts_default_voice
+
+
+class SynthesisError(RuntimeError):
+    pass
 
 
 async def synthesize_to_bytes(
@@ -35,9 +39,10 @@ async def synthesize_to_bytes(
     volume: str = "+0%",
     pitch: str = "+0Hz",
 ) -> bytes:
+    resolved_voice = resolve_voice(voice)
     communicate = edge_tts.Communicate(
         text,
-        _resolve_voice(voice),
+        resolved_voice,
         rate=rate,
         volume=volume,
         pitch=pitch,
@@ -46,7 +51,10 @@ async def synthesize_to_bytes(
     async for chunk in communicate.stream():
         if chunk["type"] == "audio":
             chunks.append(chunk["data"])
-    return b"".join(chunks)
+    audio = b"".join(chunks)
+    if not audio:
+        raise SynthesisError(f"语音合成未返回音频数据（voice={resolved_voice}）")
+    return audio
 
 
 async def synthesize_stream(
@@ -58,7 +66,7 @@ async def synthesize_stream(
 ) -> AsyncIterator[bytes]:
     communicate = edge_tts.Communicate(
         text,
-        _resolve_voice(voice),
+        resolve_voice(voice),
         rate=rate,
         volume=volume,
         pitch=pitch,

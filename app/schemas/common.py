@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field, HttpUrl
 
 
@@ -6,8 +8,15 @@ class MarkItDownUrlRequest(BaseModel):
 
 
 class MarkItDownResponse(BaseModel):
-    markdown: str
+    markdown: str = Field(description="提取的正文内容（Markdown 或纯文本，见 format 字段）")
     source: str
+    format: Literal["markdown", "text"] = Field(
+        description="内容格式：markdown 含标题/列表等结构；text 为纯文本抽取",
+    )
+    method: str | None = Field(
+        default=None,
+        description="实际使用的提取策略：markitdown / trafilatura / playwright_markdownify 等",
+    )
 
 
 class WhisperResponse(BaseModel):
@@ -90,7 +99,18 @@ class EdgeTtsSynthesizeRequest(BaseModel):
     rate: str = Field(default="+0%", description="语速，如 +10% / -20%")
     volume: str = Field(default="+0%", description="音量，如 +10% / -10%")
     pitch: str = Field(default="+0Hz", description="音调，如 +5Hz / -5Hz")
-    stream: bool = Field(default=False, description="是否以流式返回音频")
+    stream: bool = Field(default=False, description="是否以流式返回音频（二进制模式）")
+    return_base64: bool = Field(
+        default=False,
+        description="为 true 时返回 JSON（含 base64 音频），便于 Swagger 调试；默认返回 MP3 二进制",
+    )
+
+
+class EdgeTtsSynthesizeResponse(BaseModel):
+    audio_base64: str = Field(description="MP3 音频的 Base64 编码")
+    content_type: str = Field(default="audio/mpeg")
+    size_bytes: int = Field(description="解码后音频字节数")
+    voice: str = Field(description="实际使用的发音人")
 
 
 class LangExtractItem(BaseModel):

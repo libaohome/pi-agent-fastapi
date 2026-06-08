@@ -105,6 +105,27 @@ async def sandbox_session(user_id: str):
                 shutil.rmtree(sandbox_dir, ignore_errors=True)
 
 
+async def fetch_rendered_content(
+    url: str,
+    *,
+    wait_until: str = "networkidle",
+    timeout_ms: int | None = None,
+    user_id: str = "_markitdown",
+) -> tuple[str, str]:
+    """无头浏览器渲染页面，返回 (html, body_text)。"""
+    settings = get_settings()
+    target = validate_target_url(url)
+    async with sandbox_session(user_id) as session:
+        await session.page.goto(
+            target,
+            wait_until=wait_until,
+            timeout=timeout_ms or settings.playwright_navigation_timeout_ms,
+        )
+        html = await session.page.content()
+        text = await session.page.inner_text("body")
+        return html, text
+
+
 async def fetch_page(user_id: str, request: PlaywrightPageRequest) -> PlaywrightPageResult:
     url = validate_target_url(request.url)
     async with sandbox_session(user_id) as session:
