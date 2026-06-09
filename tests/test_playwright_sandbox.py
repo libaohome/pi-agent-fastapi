@@ -35,4 +35,8 @@ def test_allow_public_https(monkeypatch):
 
     get_settings.cache_clear()
 
+    monkeypatch.setattr(
+        "app.services.playwright_sandbox._resolve_host_ips",
+        lambda hostname: ["93.184.216.34"],
+    )
     assert validate_target_url("https://example.com/path") == "https://example.com/path"

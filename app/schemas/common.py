@@ -370,3 +370,39 @@ class PresidioAnalyzeResponse(BaseModel):
     language: str
     entity_count: int
     entities: list[PresidioEntity]
+
+
+class GeminiImageGenerateRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=4000, description="图片描述")
+    force_generate: bool = Field(
+        default=True,
+        description="自动补充「AI 生图」指令，避免 Gemini 返回网页搜图",
+    )
+    full_size: bool = Field(default=True, description="AI 生图是否拉取高清原图")
+    storage_mode: Literal["disk", "memory", "both"] = Field(
+        default="disk",
+        description="disk=保存到服务器并返回下载路径；memory=仅 base64；both=同时保存并返回 base64",
+    )
+
+
+class GeminiImageItem(BaseModel):
+    source: Literal["generated", "web"]
+    content_type: str
+    base64: str | None = Field(default=None, description="storage_mode 为 memory/both 时返回")
+    url: str | None = Field(default=None, description="Gemini 返回的预览 URL")
+    file_id: str | None = Field(default=None, description="本地存储文件 ID（storage_mode 为 disk/both 时）")
+    filename: str | None = Field(default=None, description="本地存储文件名")
+    download_path: str | None = Field(
+        default=None,
+        description="本服务下载接口相对路径，如 /api/v1/gemini-image/files/{file_id}",
+    )
+    size_bytes: int | None = None
+    title: str = ""
+    alt: str = ""
+
+
+class GeminiImageGenerateResponse(BaseModel):
+    text: str | None = Field(default=None, description="Gemini 附带的文字回复")
+    images: list[GeminiImageItem]
+    image_count: int
+    storage_mode: Literal["disk", "memory", "both"]

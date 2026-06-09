@@ -8,7 +8,7 @@ from fastapi.responses import RedirectResponse
 from app.api.router import api_router
 from app.config import get_settings
 from app.core.openapi import setup_openapi, swagger_ui_parameters
-from app.services import playwright_service
+from app.services import gemini_image_service, playwright_service
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,15 @@ async def lifespan(_: FastAPI):
         logger.info("Playwright 后台沙箱已启动（headless Chromium）")
     except Exception as exc:
         logger.warning("Playwright 启动失败，相关接口不可用: %s", exc)
+    try:
+        await gemini_image_service.start()
+    except Exception as exc:
+        logger.warning("Gemini 生图客户端启动失败: %s", exc)
     yield
+    try:
+        await gemini_image_service.stop()
+    except Exception:
+        pass
     try:
         await playwright_service.stop()
     except Exception:

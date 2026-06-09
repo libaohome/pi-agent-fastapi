@@ -12,3 +12,6 @@ venv/
 .pytest_cache/
 dist/
 build/
+app/geminirun.py
+app/geminiimage.py
+output/

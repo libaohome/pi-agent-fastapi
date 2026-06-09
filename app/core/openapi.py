@@ -28,6 +28,7 @@ OPENAPI_TAGS: list[dict[str, str]] = [
     {"name": "integrations-coze", "description": "Coze Studio 集成"},
     {"name": "integrations-n8n", "description": "n8n Webhook 集成"},
     {"name": "media", "description": "图片/视频生成（OpenAI 兼容网关）"},
+    {"name": "gemini-image", "description": "Gemini 网页端 AI 生图（gemini-webapi + Cookie）"},
     {"name": "system", "description": "系统健康检查"},
 ]
 

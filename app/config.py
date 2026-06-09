@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -149,6 +149,23 @@ class Settings(BaseSettings):
 
     # presidio
     presidio_language: str = "zh"
+
+    # Gemini 网页端生图（gemini-webapi + Cookie）
+    gemini_secure_1psid: str | None = None
+    gemini_secure_1psidts: str | None = None
+    gemini_proxy: str | None = None
+    gemini_timeout_sec: int = Field(default=600, ge=60, le=1800)
+    gemini_watchdog_timeout_sec: int = Field(default=180, ge=30, le=600)
+    gemini_image_dir: str = ".data/gemini-images"
+
+    @field_validator("gemini_proxy", mode="before")
+    @classmethod
+    def _normalize_gemini_proxy(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value.strip() if isinstance(value, str) else value
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -7,6 +7,7 @@ from app.api import (
     embeddings,
     extract_web,
     ffmpeg,
+    gemini_image,
     image_tools,
     knowledge_graph,
     langextract,
@@ -49,3 +50,4 @@ api_router.include_router(wecom.router)
 api_router.include_router(coze.router)
 api_router.include_router(n8n.router)
 api_router.include_router(media.router)
+api_router.include_router(gemini_image.router)
