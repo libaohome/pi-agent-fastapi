@@ -92,7 +92,8 @@ class Settings(BaseSettings):
     )
     langextract_ollama_url: str = "http://localhost:11434"
 
-    # Playwright 后台沙箱
+    # Playwright 后台沙箱（Chromium 占用内存大，生产环境默认不在启动时加载）
+    playwright_enabled: bool = False
     playwright_headless: bool = True
     playwright_chromium_sandbox: bool = True
     playwright_max_concurrent: int = Field(default=3, ge=1, le=20)

@@ -61,7 +61,6 @@ sudo apt install -y ffmpeg
 ## centos下安装ffmpeg
 sudo yum install -y epel-release
 sudo yum install -y ffmpeg
-sudo dnf install -y ffmpeg
 ## fedro下安装ffmpeg
 sudo dnf install -y ffmpeg
 ## 安装结果确认

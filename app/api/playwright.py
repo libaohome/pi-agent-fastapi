@@ -21,6 +21,14 @@ router = APIRouter(prefix="/playwright", tags=["playwright"])
 
 
 def _ensure_ready() -> None:
+    from app.config import get_settings
+
+    settings = get_settings()
+    if not settings.playwright_enabled:
+        raise HTTPException(
+            503,
+            detail="Playwright 未启用，请在 .env 中设置 PLAYWRIGHT_ENABLED=true 并重启服务",
+        )
     if not pw.is_ready():
         raise HTTPException(
             503,
@@ -34,6 +42,7 @@ async def playwright_status(_: Annotated[AuthContext, Depends(get_current_user)]
 
     settings = get_settings()
     return {
+        "enabled": settings.playwright_enabled,
         "ready": pw.is_ready(),
         "headless": settings.playwright_headless,
         "chromium_sandbox": settings.playwright_chromium_sandbox,

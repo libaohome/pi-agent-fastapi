@@ -31,7 +31,7 @@ if [[ -z "$PYTHON" ]]; then
 fi
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
-WORKERS="${WORKERS:-2}"
+WORKERS="${WORKERS:-1}"
 DEV_MODE=false
 
 for arg in "$@"; do
@@ -54,8 +54,28 @@ if ! command -v "$PYTHON" >/dev/null 2>&1; then
 fi
 if ! "$PYTHON" -c "import uvicorn" >/dev/null 2>&1; then
   echo "错误: 当前 Python 未安装 uvicorn" >&2
-  echo "请先安装依赖: pip install -e \".[dev,ml,top5]\"" >&2
+  echo "请先安装依赖:" >&2
+  echo "  cd ${ROOT}" >&2
+  echo "  $PYTHON -m pip install -U pip" >&2
+  echo "  $PYTHON -m pip install -e \".[dev,ml,top5]\"" >&2
   exit 1
+fi
+
+IMPORT_ERR="$("$PYTHON" -c "import app.main" 2>&1)" || {
+  echo "错误: 无法加载 app.main，项目依赖未安装完整" >&2
+  echo "${IMPORT_ERR}" >&2
+  echo "" >&2
+  echo "请在服务器上执行:" >&2
+  echo "  cd ${ROOT}" >&2
+  echo "  $PYTHON -m pip install -U pip" >&2
+  echo "  $PYTHON -m pip install -e \".[dev,ml,top5]\"" >&2
+  echo "  $PYTHON -m playwright install chromium" >&2
+  echo "  $PYTHON -m playwright install-deps chromium" >&2
+  exit 1
+}
+
+if ! "$PYTHON" -c 'import sys; sys.exit(0 if sys.version_info < (3, 13) else 1)'; then
+  echo "警告: 当前 Python 版本 >= 3.13，部分 ML 依赖可能不兼容，建议使用 Python 3.11/3.12" >&2
 fi
 
 if [[ ! -f "${ROOT}/.env" ]]; then

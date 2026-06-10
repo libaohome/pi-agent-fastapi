@@ -38,9 +38,11 @@ class PlaywrightPageResult:
 
 async def start() -> None:
     global _browser, _playwright, _semaphore
+    settings = get_settings()
+    if not settings.playwright_enabled:
+        return
     if _browser is not None:
         return
-    settings = get_settings()
     _semaphore = asyncio.Semaphore(settings.playwright_max_concurrent)
     _playwright = await async_playwright().start()
     _browser = await _playwright.chromium.launch(

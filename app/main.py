@@ -18,11 +18,15 @@ SWAGGER_CSS_URL = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    try:
-        await playwright_service.start()
-        logger.info("Playwright 后台沙箱已启动（headless Chromium）")
-    except Exception as exc:
-        logger.warning("Playwright 启动失败，相关接口不可用: %s", exc)
+    settings = get_settings()
+    if settings.playwright_enabled:
+        try:
+            await playwright_service.start()
+            logger.info("Playwright 后台沙箱已启动（headless Chromium）")
+        except Exception as exc:
+            logger.warning("Playwright 启动失败，相关接口不可用: %s", exc)
+    else:
+        logger.info("Playwright 未启用（PLAYWRIGHT_ENABLED=false），/playwright 接口将返回 503")
     try:
         await gemini_image_service.start()
     except Exception as exc:
@@ -32,10 +36,11 @@ async def lifespan(_: FastAPI):
         await gemini_image_service.stop()
     except Exception:
         pass
-    try:
-        await playwright_service.stop()
-    except Exception:
-        pass
+    if settings.playwright_enabled:
+        try:
+            await playwright_service.stop()
+        except Exception:
+            pass
 
 
 def create_app() -> FastAPI:
