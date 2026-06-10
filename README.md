@@ -4,34 +4,34 @@ Pi Agent 的 Python 侧服务，与 `[../pi-agent](../pi-agent)`（Next.js）共
 
 ## 职责总览
 
+| 分组 | 模块 | 路径 | 说明 |
+|------|------|------|------|
+| **文档处理** | MarkItDown | `/api/v1/markitdown` | 文档/网页转 Markdown |
+| | PDF 工具 | `/api/v1/pdf` | PyMuPDF / pdfplumber / camelot 文本与表格提取 |
+| | PaddleOCR | `/api/v1/ocr` | 图片/PDF 扫描件 OCR |
+| | unstructured | `/api/v1/document` | 统一文档解析（PDF/Word/PPT/邮件等） |
+| | trafilatura | `/api/v1/extract-web` | 网页正文抽取（可配合 Playwright） |
+| **图片** | rembg | `/api/v1/image` | 图片抠图去背景 |
+| **语音** | Faster Whisper | `/api/v1/whisper` | 语音转文字 |
+| | whisperx | `/api/v1/whisperx` | 高精度转写 + 时间戳 + 说话人分离 |
+| | Edge TTS | `/api/v1/edge-tts` | 文字转语音（微软在线，无需 Key） |
+| | 音频工具 | `/api/v1/audio-tools` | librosa / pydub / demucs 分析、切片、分离 |
+| **向量化** | sentence-transformers | `/api/v1/embeddings` | 本地文本向量化与相似度 |
+| **合规** | presidio | `/api/v1/presidio` | PII 检测与脱敏 |
+| **视频** | yt-dlp | `/api/v1/ytdlp` | 视频/音频下载 |
+| | ffmpeg | `/api/v1/ffmpeg` | 媒体探测、转码、提取音频 |
+| | 视频工具 | `/api/v1/video-tools` | moviepy / scenedetect 裁剪、分镜、缩略图 |
+| **AI 抽取** | LangExtract | `/api/v1/langextract` | LLM 结构化信息抽取 |
+| | jieba | `/api/v1/nlp` | 中文分词与关键词（pkuseg 不支持 Py3.12+） |
+| | 知识图谱 | `/api/v1/knowledge-graph` | 三元组存储与邻域查询 |
+| **AI 生成** | 媒体生成 | `/api/v1/media` | 图片/视频（OpenAI 兼容网关） |
+| | Gemini 生图 | `/api/v1/gemini-image` | Gemini 网页端 AI 生图（Cookie 鉴权） |
+| **自动化** | Playwright | `/api/v1/playwright` | 后台无头沙箱浏览器（需 `PLAYWRIGHT_ENABLED=true`） |
+| | 飞书 / 企微 / Coze / n8n | `/api/v1/integrations/*` | 第三方集成 |
+| **系统** | 健康检查 | `/health` | 服务存活探测 |
 
-| 模块                                 | 路径                        | 说明                                |
-| ---------------------------------- | ------------------------- | --------------------------------- |
-| MarkItDown                         | `/api/v1/markitdown`      | 文档/网页转 Markdown                   |
-| Faster Whisper                     | `/api/v1/whisper`         | 语音转文字                             |
-| Edge TTS                           | `/api/v1/edge-tts`        | 文字转语音                             |
-| LangExtract                        | `/api/v1/langextract`     | LLM 结构化信息抽取                       |
-| Playwright                         | `/api/v1/playwright`      | 后台无头沙箱浏览器                         |
-| yt-dlp                             | `/api/v1/ytdlp`           | 视频/音频下载                           |
-| ffmpeg                             | `/api/v1/ffmpeg`          | 媒体探测、转码、提取音频                      |
-| **PaddleOCR**                      | `/api/v1/ocr`             | 图片/PDF 扫描件 OCR                    |
-| **rembg**                          | `/api/v1/image`           | 图片抠图去背景                           |
-| **PyMuPDF / pdfplumber / camelot** | `/api/v1/pdf`             | PDF 文本/图片/表格提取                    |
-| **moviepy / scenedetect**          | `/api/v1/video-tools`     | 视频裁剪、分镜、缩略图                       |
-| **librosa / pydub / demucs**       | `/api/v1/audio-tools`     | 音频分析、切片、音轨分离                      |
-| **jieba**                          | `/api/v1/nlp`             | 中文分词与关键词（pkuseg 不支持 Py3.12，见下方说明） |
-| **trafilatura**                    | `/api/v1/extract-web`     | 网页正文抽取（配合 Playwright）             |
-| **unstructured**                   | `/api/v1/document`        | 统一文档解析（PDF/Word/PPT/邮件等）          |
-| **sentence-transformers**          | `/api/v1/embeddings`      | 本地文本向量化与相似度                       |
-| **whisperx**                       | `/api/v1/whisperx`        | 高精度转写 + 时间戳 + 说话人分离               |
-| **presidio**                       | `/api/v1/presidio`        | PII 检测与脱敏                         |
-| 知识图谱                               | `/api/v1/knowledge-graph` | 三元组存储与邻域查询                        |
-| 飞书 / 企微 / Coze / n8n               | `/api/v1/integrations/`*  | 第三方集成                             |
-| 媒体生成                               | `/api/v1/media`           | 图片/视频（OpenAI 兼容网关）                |
-
-
-> 加粗模块需安装扩展依赖：`pip install -e ".[dev,ml,top5]"`
-
+> OCR、PDF、音视频、NLP、Top5 等扩展能力需安装：`pip install -e ".[dev,ml,top5]"`  
+> 各模块 `GET /status`（如有）会返回对应库是否可用。
 ## 鉴权（与 pi-agent 一致）
 
 所有 `/api/v1/`* 接口需要 `Authorization: Bearer <token>`：
@@ -47,27 +47,44 @@ export TOKEN="pi_xxxxxxxx"
 
 ## 快速开始
 
+### 1. 配置与环境
+
 ```bash
 cd pi-agent-fastapi
 cp .env.example .env
 # 填入与 pi-agent 相同的 Supabase 配置
+```
 
-## mac下安装ffmpeg
+### 2. 系统依赖（按需）
+
+**ffmpeg**（yt-dlp / ffmpeg / 音视频模块需要）：
+
+```bash
+# macOS
 brew install ffmpeg
-conda install ffmpeg
-## ubuntu下安装ffmpeg
-sudo apt update
-sudo apt install -y ffmpeg
-## centos下安装ffmpeg
-sudo yum install -y epel-release
-sudo yum install -y ffmpeg
-## fedro下安装ffmpeg
-sudo dnf install -y ffmpeg
-## 安装结果确认
-which ffmpeg
-ffmpeg -version
 
-#创建虚拟运行环境（开发阶段）
+# Ubuntu / Debian
+sudo apt update && sudo apt install -y ffmpeg
+
+# RHEL / CentOS（需 EPEL 或 RPM Fusion）
+sudo dnf install -y ffmpeg   # 或 yum，视发行版而定
+
+ffmpeg -version   # 确认安装
+```
+
+**ghostscript**（camelot PDF 表格提取需要）：`brew install ghostscript` / `apt install ghostscript`
+
+**Playwright**（仅在使用 `/playwright` 时需要，且 `.env` 中 `PLAYWRIGHT_ENABLED=true`）：
+
+```bash
+playwright install chromium
+playwright install-deps chromium   # Linux 系统库
+```
+
+### 3. Python 依赖
+
+```bash
+# 推荐 Python 3.11 / 3.12（3.13 下部分 ML 库可能不兼容）
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,ml,top5]"   # 含 OCR/PDF/音视频/NLP/Top5 等扩展库
@@ -75,17 +92,37 @@ pip install -e ".[dev,ml,top5]"   # 含 OCR/PDF/音视频/NLP/Top5 等扩展库
 # 或使用脚本：bash scripts/install-ml.sh
 
 python -m spacy download zh_core_web_sm   # presidio 中文支持（可选）
-
-playwright install chromium   # Playwright 需要
-# 系统依赖
-# macOS:  brew install ffmpeg ghostscript
-# Ubuntu: apt install ffmpeg ghostscript
-
-uvicorn app.main:app --reload --port 8000
-
-#生产环境部署命令
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
 ```
+
+### 4. 启动服务
+
+**开发模式：**
+
+```bash
+uvicorn app.main:app --reload --port 8000
+# 或
+bash run.sh --dev
+```
+
+**Linux 生产部署（`run.sh`）：**
+
+```bash
+# 前台
+bash run.sh
+
+# 指定端口 /  worker 数（低内存 VPS 建议 WORKERS=1）
+HOST=0.0.0.0 PORT=8000 WORKERS=1 bash run.sh
+
+# 后台运行
+nohup bash run.sh > app.log 2>&1 &
+```
+
+| 环境变量 | 默认值 | 说明 |
+|---------|--------|------|
+| `HOST` | `0.0.0.0` | 监听地址 |
+| `PORT` | `8000` | 端口 |
+| `WORKERS` | `1` | uvicorn worker 数（每 worker 独立占内存） |
+| `PYTHON` | 自动检测 | 指定 Python 解释器，如 `python3.12` |
 
 - 健康检查：`GET http://localhost:8000/health`
 - 根路径 `http://localhost:8000/` 自动跳转到 Swagger UI
@@ -109,10 +146,21 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
 
 文档特性：
 
-- 按模块 **Tag 分组**（OCR、PDF、音视频、集成等）
+- 按 **10 个模块分组** 折叠浏览（文档处理、图片、语音、向量化、合规、视频、AI 抽取、AI 生成、自动化、系统）
 - **持久化鉴权**（刷新页面 Token 仍保留）
 - 接口 **耗时显示**、关键字 **过滤搜索**
 - 生产环境可通过 `DOCS_ENABLED=false` 关闭
+
+### 低内存服务器建议
+
+| 配置 | 建议值 | 原因 |
+|------|--------|------|
+| `PLAYWRIGHT_ENABLED` | `false` | Chromium 启动占用数百 MB～1GB+ |
+| `WORKERS` | `1` | 每个 worker 是独立进程，内存翻倍 |
+| Python 版本 | 3.11 / 3.12 | 3.13 下部分 ML 库兼容性较差 |
+| 可选依赖 | 按需安装 `[dev]` 即可 | 不装 `[ml,top5]` 可减小镜像体积 |
+
+ML 模型（whisper、OCR、rembg 等）均为 **首次调用时加载**，不会在启动时占内存；但调用后仍会临时占用大量 RAM。
 
 ### 依赖分组说明
 
@@ -129,6 +177,25 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
 ---
 
 ## 使用手册
+
+### 0. MarkItDown — `/api/v1/markitdown`
+
+文档/网页转 Markdown，支持上传文件或 URL。
+
+```bash
+# 上传文件转换
+curl -X POST http://localhost:8000/api/v1/markitdown/convert/file \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@report.docx"
+
+# URL 转换
+curl -X POST http://localhost:8000/api/v1/markitdown/convert/url \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/page"}'
+```
+
+---
 
 ### 1. PaddleOCR — `/api/v1/ocr`
 
@@ -333,7 +400,12 @@ curl -X POST http://localhost:8000/api/v1/nlp/segment \
 
 无头 Chromium，独立 BrowserContext，默认拦截内网地址。
 
+> **默认不在启动时加载**。需在 `.env` 设置 `PLAYWRIGHT_ENABLED=true` 并安装 Chromium 后重启服务；未启用时接口返回 503。
+
 ```bash
+# 检查状态
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/playwright/status
+
 curl -X POST http://localhost:8000/api/v1/playwright/page \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -462,6 +534,139 @@ curl -X POST http://localhost:8000/api/v1/presidio/anonymize \
 
 ---
 
+### 14. Faster Whisper — `/api/v1/whisper`
+
+轻量语音转文字，首次调用时加载模型。
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/whisper/transcribe?language=zh" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@audio.wav"
+```
+
+---
+
+### 15. Edge TTS — `/api/v1/edge-tts`
+
+微软在线文字转语音，无需 API Key。
+
+```bash
+# 列出中文语音
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/v1/edge-tts/voices?locale=zh-CN"
+
+# 合成语音（返回 mp3）
+curl -X POST http://localhost:8000/api/v1/edge-tts/synthesize \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"你好，欢迎使用 Pi Agent","voice":"zh-CN-XiaoxiaoNeural"}' \
+  -o speech.mp3
+```
+
+---
+
+### 16. LangExtract — `/api/v1/langextract`
+
+LLM 结构化信息抽取，默认走 OpenAI 兼容网关（见 `.env` 中 `OPENAI_*`）。
+
+```bash
+curl -X POST http://localhost:8000/api/v1/langextract/extract \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "张三，手机13812345678，就职于北京某科技公司",
+    "prompt_description": "提取人名、手机号、公司"
+  }'
+```
+
+可视化：`POST /visualize` 返回 HTML 高亮页面。
+
+---
+
+### 17. 知识图谱 — `/api/v1/knowledge-graph`
+
+按用户隔离的三元组存储，数据保存在 `.data/knowledge-graphs/`。
+
+```bash
+# 添加三元组
+curl -X POST http://localhost:8000/api/v1/knowledge-graph/triples \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"subject":"Pi Agent","predicate":"是","obj":"智能体平台"}'
+
+# 邻域查询
+curl -X POST http://localhost:8000/api/v1/knowledge-graph/query \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"entity":"Pi Agent","depth":2}'
+```
+
+---
+
+### 18. 媒体生成 — `/api/v1/media`
+
+图片/视频生成，走 OpenAI 兼容网关（`.env` 中 `MEDIA_OPENAI_*` 或共用 `OPENAI_*`）。
+
+```bash
+curl -X POST http://localhost:8000/api/v1/media/image/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"一只在沙滩上的猫","size":"1024x1024"}'
+```
+
+---
+
+### 19. Gemini 生图 — `/api/v1/gemini-image`
+
+通过 Gemini 网页端 Cookie 生图（依赖 `gemini-webapi`）。
+
+**配置（`.env`）：**
+
+```env
+GEMINI_SECURE_1PSID=        # 必填，浏览器 Cookie __Secure-1PSID 完整值
+GEMINI_SECURE_1PSIDTS=      # 可选，部分账号已无此 Cookie
+# GEMINI_PROXY=             # 可选代理；留空则不走代理
+GEMINI_IMAGE_DIR=.data/gemini-images
+```
+
+```bash
+# 检查状态（UNAUTHENTICATED 表示 Cookie 过期）
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/gemini-image/status
+
+# 生图（storage_mode: disk / memory / both）
+curl -X POST http://localhost:8000/api/v1/gemini-image/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"一只可爱的柴犬","storage_mode":"both"}'
+
+# 更新 Cookie 后热重载（无需重启）
+curl -X POST http://localhost:8000/api/v1/gemini-image/reload \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### 20. 第三方集成 — `/api/v1/integrations/*`
+
+| 路径 | 环境变量 | 说明 |
+|------|---------|------|
+| `/integrations/feishu` | `FEISHU_APP_ID`、`FEISHU_APP_SECRET` | 飞书消息推送 |
+| `/integrations/wecom` | `WECOM_CORP_ID`、`WECOM_AGENT_ID`、`WECOM_SECRET` | 企业微信 |
+| `/integrations/coze` | `COZE_API_BASE`、`COZE_API_TOKEN` | Coze Studio |
+| `/integrations/n8n` | `N8N_WEBHOOK_BASE`、`N8N_API_KEY` | n8n Webhook |
+
+```bash
+# 飞书发文本消息示例
+curl -X POST http://localhost:8000/api/v1/integrations/feishu/messages/text \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"receive_id":"ou_xxx","receive_id_type":"open_id","text":"Hello from Pi Agent"}'
+```
+
+各集成均有 `GET /status` 返回 `configured` 状态。
+
+---
+
 ## 从 pi-agent 调用
 
 ```typescript
@@ -522,9 +727,7 @@ await fetch("http://localhost:8000/api/v1/nlp/segment", {
 | ----------- | ----------------- | ----------------------------- |
 | ffmpeg      | 转码、yt-dlp 合并、视频处理 | `brew install ffmpeg`         |
 | ghostscript | camelot 表格提取      | `brew install ghostscript`    |
-| Chromium    | Playwright        | `playwright install chromium` |
-
-
+| Chromium    | Playwright（可选）    | `playwright install chromium`，且 `PLAYWRIGHT_ENABLED=true` |
 ---
 
 ## 环境变量
@@ -532,9 +735,25 @@ await fetch("http://localhost:8000/api/v1/nlp/segment", {
 详见 `[.env.example](.env.example)`。核心配置：
 
 ```env
+# Supabase（与 pi-agent 共用）
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+
+# 文档
+DOCS_ENABLED=true
+
+# Playwright（低内存服务器保持 false）
+PLAYWRIGHT_ENABLED=false
+
+# Whisper / Edge TTS
+WHISPER_MODEL_SIZE=base
+EDGE_TTS_DEFAULT_VOICE=zh-CN-XiaoxiaoNeural
+
+# LangExtract / 媒体生成（OpenAI 兼容网关）
+OPENAI_BASE_URL=https://api-inference.modelscope.cn/v1
+OPENAI_API_KEY=ms-...
+LANGEXTRACT_DEFAULT_MODEL=Qwen/Qwen3-235B-A22B
 
 # ML / Top5 模块
 PADDLEOCR_LANG=ch
@@ -544,5 +763,14 @@ WHISPERX_HF_TOKEN=          # 说话人分离
 PRESIDIO_LANGUAGE=zh
 VIDEO_WORK_DIR=.data/video-work
 AUDIO_WORK_DIR=.data/audio-work
+KNOWLEDGE_GRAPH_DIR=.data/knowledge-graphs
+
+# Gemini 生图
+GEMINI_SECURE_1PSID=
+# GEMINI_SECURE_1PSIDTS=
+# GEMINI_IMAGE_DIR=.data/gemini-images
+
+# 第三方集成（按需）
+# FEISHU_APP_ID= / WECOM_CORP_ID= / COZE_API_TOKEN= / N8N_WEBHOOK_BASE=
 ```
 
