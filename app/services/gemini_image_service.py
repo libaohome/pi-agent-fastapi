@@ -2,7 +2,9 @@ import asyncio
 import base64
 import logging
 import mimetypes
+import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Any, Literal
 from uuid import uuid4
@@ -16,6 +18,8 @@ _client: Any = None
 _lock = asyncio.Lock()
 _init_lock = asyncio.Lock()
 _account_status_name: str | None = None
+_loaded_psid: str | None = None
+_loaded_psidts: str | None = None
 
 _FILE_ID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -64,7 +68,7 @@ def _save_image_bytes(user_id: str, data: bytes, content_type: str) -> tuple[str
 
 
 async def start() -> None:
-    global _client, _account_status_name
+    global _client, _account_status_name, _loaded_psid, _loaded_psidts
     if not configured():
         return
     if _client is not None and getattr(_client, "_running", False):
@@ -91,6 +95,8 @@ async def start() -> None:
     try:
         await client.init()
         _client = client
+        _loaded_psid = settings.gemini_secure_1psid
+        _loaded_psidts = settings.gemini_secure_1psidts
         _account_status_name = client.account_status.name
         logger.info("Gemini 生图客户端已启动，账号状态: %s", _account_status_name)
     except Exception as exc:
@@ -99,11 +105,40 @@ async def start() -> None:
 
 
 async def stop() -> None:
-    global _client, _account_status_name
+    global _client, _account_status_name, _loaded_psid, _loaded_psidts
     if _client is not None:
         await _safe_close(_client)
         _client = None
         _account_status_name = None
+        _loaded_psid = None
+        _loaded_psidts = None
+
+
+def _gemini_cookie_cache_dir() -> Path:
+    custom = os.getenv("GEMINI_COOKIE_PATH")
+    return Path(custom) if custom else Path(tempfile.gettempdir()) / "gemini_webapi"
+
+
+def _clear_gemini_cookie_cache(psid: str | None = None) -> None:
+    """清除 gemini-webapi 本地 Cookie 缓存，避免旧会话覆盖 .env 中新 Cookie。"""
+    cache_dir = _gemini_cookie_cache_dir()
+    if not cache_dir.is_dir():
+        return
+    if psid:
+        target = cache_dir / f".cached_cookies_{psid}.json"
+        if target.is_file():
+            target.unlink()
+            logger.info("已清除 Gemini Cookie 缓存: %s", target.name[:48])
+        return
+    for path in cache_dir.glob(".cached_cookies_*.json"):
+        path.unlink(missing_ok=True)
+    logger.info("已清除全部 Gemini Cookie 缓存 (%s)", cache_dir)
+
+
+def _live_account_status_name() -> str | None:
+    if _client is not None and getattr(_client, "_running", False):
+        return getattr(getattr(_client, "account_status", None), "name", None)
+    return account_status_name()
 
 
 async def restart() -> None:
@@ -111,8 +146,12 @@ async def restart() -> None:
     from app.config import get_settings
 
     get_settings.cache_clear()
+    settings = get_settings()
+    _clear_gemini_cookie_cache(settings.gemini_secure_1psid)
     await stop()
     await start()
+    if _account_status_name:
+        logger.info("Gemini 客户端重载完成，账号状态: %s", _account_status_name)
 
 
 def _cookie_fingerprint(value: str | None) -> str | None:
@@ -199,12 +238,53 @@ async def _download_image_bytes(img: Any, *, full_size: bool) -> tuple[bytes, st
     return response.content, content_type or "image/png"
 
 
+def _status_hints(
+    *,
+    status_name: str | None,
+    has_psidts: bool,
+    proxy: bool,
+) -> list[str]:
+    from gemini_webapi.constants import AccountStatus
+
+    hints: list[str] = []
+    if status_name == AccountStatus.UNAUTHENTICATED.name:
+        hints.append(
+            "Cookie 已过期或无效：请在已登录 gemini.google.com 的浏览器中重新复制 "
+            "__Secure-1PSID 与 __Secure-1PSIDTS，更新 .env 后调用 POST /gemini-image/reload"
+        )
+        if not has_psidts:
+            hints.append("当前未配置 GEMINI_SECURE_1PSIDTS，建议与 PSID 同时从浏览器复制")
+        if not proxy:
+            hints.append("若服务器无法直连 Google，请在 .env 设置 GEMINI_PROXY")
+        hints.append(
+            "可删除 gemini-webapi 本地缓存后重载："
+            "rm -f \"$TMPDIR/gemini_webapi/.cached_cookies_\"*.json"
+        )
+    return hints
+
+
 def status() -> dict[str, Any]:
     from gemini_webapi.constants import AccountStatus
 
+    get_settings.cache_clear()
     settings = get_settings()
-    status_name = account_status_name()
+    status_name = _live_account_status_name()
     available = status_name == AccountStatus.AVAILABLE.name if status_name else False
+    has_psidts = bool(settings.gemini_secure_1psidts)
+    stale_client = is_ready() and (
+        settings.gemini_secure_1psid != _loaded_psid
+        or settings.gemini_secure_1psidts != _loaded_psidts
+    )
+    hints = _status_hints(
+        status_name=status_name,
+        has_psidts=has_psidts,
+        proxy=bool(settings.gemini_proxy),
+    )
+    if stale_client:
+        hints.insert(
+            0,
+            ".env 中的 Cookie 与当前运行中客户端不一致，请调用 POST /gemini-image/reload",
+        )
     return {
         "configured": configured(),
         "ready": is_ready(),
@@ -216,8 +296,9 @@ def status() -> dict[str, Any]:
         "cookie_fingerprint": {
             "secure_1psid": _cookie_fingerprint(settings.gemini_secure_1psid),
             "secure_1psidts": _cookie_fingerprint(settings.gemini_secure_1psidts),
-            "psidts_required": False,
+            "psidts_configured": has_psidts,
         },
+        "hints": hints,
     }
 
 
