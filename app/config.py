@@ -151,12 +151,21 @@ class Settings(BaseSettings):
     presidio_language: str = "zh"
 
     # Gemini 网页端生图（gemini-webapi + Cookie）
-    gemini_secure_1psid: str | None = None
-    gemini_secure_1psidts: str | None = None
-    gemini_proxy: str | None = None
+    gemini_secure_1psid: str | None = Field(default=None, validation_alias="GEMINI_SECURE_1PSID")
+    gemini_secure_1psidts: str | None = Field(default=None, validation_alias="GEMINI_SECURE_1PSIDTS")
+    gemini_proxy: str | None = Field(default=None, validation_alias="GEMINI_PROXY")
     gemini_timeout_sec: int = Field(default=600, ge=60, le=1800)
     gemini_watchdog_timeout_sec: int = Field(default=180, ge=30, le=600)
     gemini_image_dir: str = ".data/gemini-images"
+
+    @field_validator("gemini_secure_1psid", "gemini_secure_1psidts", mode="before")
+    @classmethod
+    def _normalize_gemini_cookie(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value.strip() if isinstance(value, str) else value
 
     @field_validator("gemini_proxy", mode="before")
     @classmethod

@@ -1,38 +1,40 @@
 # Pi Agent FastAPI
 
-Pi Agent 的 Python 侧服务，与 [`../pi-agent`](../pi-agent)（Next.js）共用 **Supabase 项目** 与 **鉴权 Token**。
+Pi Agent 的 Python 侧服务，与 `[../pi-agent](../pi-agent)`（Next.js）共用 **Supabase 项目** 与 **鉴权 Token**。
 
 ## 职责总览
 
-| 模块 | 路径 | 说明 |
-|------|------|------|
-| MarkItDown | `/api/v1/markitdown` | 文档/网页转 Markdown |
-| Faster Whisper | `/api/v1/whisper` | 语音转文字 |
-| Edge TTS | `/api/v1/edge-tts` | 文字转语音 |
-| LangExtract | `/api/v1/langextract` | LLM 结构化信息抽取 |
-| Playwright | `/api/v1/playwright` | 后台无头沙箱浏览器 |
-| yt-dlp | `/api/v1/ytdlp` | 视频/音频下载 |
-| ffmpeg | `/api/v1/ffmpeg` | 媒体探测、转码、提取音频 |
-| **PaddleOCR** | `/api/v1/ocr` | 图片/PDF 扫描件 OCR |
-| **rembg** | `/api/v1/image` | 图片抠图去背景 |
-| **PyMuPDF / pdfplumber / camelot** | `/api/v1/pdf` | PDF 文本/图片/表格提取 |
-| **moviepy / scenedetect** | `/api/v1/video-tools` | 视频裁剪、分镜、缩略图 |
-| **librosa / pydub / demucs** | `/api/v1/audio-tools` | 音频分析、切片、音轨分离 |
-| **jieba** | `/api/v1/nlp` | 中文分词与关键词（pkuseg 不支持 Py3.12，见下方说明） |
-| **trafilatura** | `/api/v1/extract-web` | 网页正文抽取（配合 Playwright） |
-| **unstructured** | `/api/v1/document` | 统一文档解析（PDF/Word/PPT/邮件等） |
-| **sentence-transformers** | `/api/v1/embeddings` | 本地文本向量化与相似度 |
-| **whisperx** | `/api/v1/whisperx` | 高精度转写 + 时间戳 + 说话人分离 |
-| **presidio** | `/api/v1/presidio` | PII 检测与脱敏 |
-| 知识图谱 | `/api/v1/knowledge-graph` | 三元组存储与邻域查询 |
-| 飞书 / 企微 / Coze / n8n | `/api/v1/integrations/*` | 第三方集成 |
-| 媒体生成 | `/api/v1/media` | 图片/视频（OpenAI 兼容网关） |
+
+| 模块                                 | 路径                        | 说明                                |
+| ---------------------------------- | ------------------------- | --------------------------------- |
+| MarkItDown                         | `/api/v1/markitdown`      | 文档/网页转 Markdown                   |
+| Faster Whisper                     | `/api/v1/whisper`         | 语音转文字                             |
+| Edge TTS                           | `/api/v1/edge-tts`        | 文字转语音                             |
+| LangExtract                        | `/api/v1/langextract`     | LLM 结构化信息抽取                       |
+| Playwright                         | `/api/v1/playwright`      | 后台无头沙箱浏览器                         |
+| yt-dlp                             | `/api/v1/ytdlp`           | 视频/音频下载                           |
+| ffmpeg                             | `/api/v1/ffmpeg`          | 媒体探测、转码、提取音频                      |
+| **PaddleOCR**                      | `/api/v1/ocr`             | 图片/PDF 扫描件 OCR                    |
+| **rembg**                          | `/api/v1/image`           | 图片抠图去背景                           |
+| **PyMuPDF / pdfplumber / camelot** | `/api/v1/pdf`             | PDF 文本/图片/表格提取                    |
+| **moviepy / scenedetect**          | `/api/v1/video-tools`     | 视频裁剪、分镜、缩略图                       |
+| **librosa / pydub / demucs**       | `/api/v1/audio-tools`     | 音频分析、切片、音轨分离                      |
+| **jieba**                          | `/api/v1/nlp`             | 中文分词与关键词（pkuseg 不支持 Py3.12，见下方说明） |
+| **trafilatura**                    | `/api/v1/extract-web`     | 网页正文抽取（配合 Playwright）             |
+| **unstructured**                   | `/api/v1/document`        | 统一文档解析（PDF/Word/PPT/邮件等）          |
+| **sentence-transformers**          | `/api/v1/embeddings`      | 本地文本向量化与相似度                       |
+| **whisperx**                       | `/api/v1/whisperx`        | 高精度转写 + 时间戳 + 说话人分离               |
+| **presidio**                       | `/api/v1/presidio`        | PII 检测与脱敏                         |
+| 知识图谱                               | `/api/v1/knowledge-graph` | 三元组存储与邻域查询                        |
+| 飞书 / 企微 / Coze / n8n               | `/api/v1/integrations/`*  | 第三方集成                             |
+| 媒体生成                               | `/api/v1/media`           | 图片/视频（OpenAI 兼容网关）                |
+
 
 > 加粗模块需安装扩展依赖：`pip install -e ".[dev,ml,top5]"`
 
 ## 鉴权（与 pi-agent 一致）
 
-所有 `/api/v1/*` 接口需要 `Authorization: Bearer <token>`：
+所有 `/api/v1/`* 接口需要 `Authorization: Bearer <token>`：
 
 1. **Supabase JWT**：Web 登录后的 `access_token`
 2. **API Key**：`pi_` 前缀，与 pi-agent `api_keys` 表共用
@@ -50,6 +52,23 @@ cd pi-agent-fastapi
 cp .env.example .env
 # 填入与 pi-agent 相同的 Supabase 配置
 
+## mac下安装ffmpeg
+brew install ffmpeg
+conda install ffmpeg
+## ubuntu下安装ffmpeg
+sudo apt update
+sudo apt install -y ffmpeg
+## centos下安装ffmpeg
+sudo yum install -y epel-release
+sudo yum install -y ffmpeg
+sudo dnf install -y ffmpeg
+## fedro下安装ffmpeg
+sudo dnf install -y ffmpeg
+## 安装结果确认
+which ffmpeg
+ffmpeg -version
+
+#创建虚拟运行环境（开发阶段）
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,ml,top5]"   # 含 OCR/PDF/音视频/NLP/Top5 等扩展库
@@ -64,6 +83,9 @@ playwright install chromium   # Playwright 需要
 # Ubuntu: apt install ffmpeg ghostscript
 
 uvicorn app.main:app --reload --port 8000
+
+#生产环境部署命令
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
 ```
 
 - 健康检查：`GET http://localhost:8000/health`
@@ -71,11 +93,13 @@ uvicorn app.main:app --reload --port 8000
 
 ## API 文档（Swagger UI）
 
-| 地址 | 说明 |
-|------|------|
-| [`/docs`](http://localhost:8000/docs) | **Swagger UI** — 在线调试、分组浏览、鉴权测试 |
-| [`/redoc`](http://localhost:8000/redoc) | ReDoc — 只读文档 |
-| [`/openapi.json`](http://localhost:8000/openapi.json) | OpenAPI 3.0 Schema（可导入 Postman/Apifox） |
+
+| 地址                                                    | 说明                                     |
+| ----------------------------------------------------- | -------------------------------------- |
+| `[/docs](http://localhost:8000/docs)`                 | **Swagger UI** — 在线调试、分组浏览、鉴权测试        |
+| `[/redoc](http://localhost:8000/redoc)`               | ReDoc — 只读文档                           |
+| `[/openapi.json](http://localhost:8000/openapi.json)` | OpenAPI 3.0 Schema（可导入 Postman/Apifox） |
+
 
 ### 在 Swagger UI 中测试接口
 
@@ -93,11 +117,13 @@ uvicorn app.main:app --reload --port 8000
 
 ### 依赖分组说明
 
-| 安装命令 | 包含能力 |
-|---------|---------|
-| `pip install -e ".[dev]"` | 基础服务（markitdown、whisper、playwright 等） |
-| `pip install -e ".[dev,ml]"` | OCR、PDF、rembg、音视频处理、NLP |
+
+| 安装命令                              | 包含能力                                                       |
+| --------------------------------- | ---------------------------------------------------------- |
+| `pip install -e ".[dev]"`         | 基础服务（markitdown、whisper、playwright 等）                      |
+| `pip install -e ".[dev,ml]"`      | OCR、PDF、rembg、音视频处理、NLP                                    |
 | `pip install -e ".[dev,ml,top5]"` | 额外启用 trafilatura、unstructured、embeddings、whisperx、presidio |
+
 
 各模块 `GET /status` 会返回对应库是否可用。
 
@@ -492,17 +518,19 @@ await fetch("http://localhost:8000/api/v1/nlp/segment", {
 
 ## 系统依赖汇总
 
-| 工具 | 用途 | 安装 |
-|------|------|------|
-| ffmpeg | 转码、yt-dlp 合并、视频处理 | `brew install ffmpeg` |
-| ghostscript | camelot 表格提取 | `brew install ghostscript` |
-| Chromium | Playwright | `playwright install chromium` |
+
+| 工具          | 用途                | 安装                            |
+| ----------- | ----------------- | ----------------------------- |
+| ffmpeg      | 转码、yt-dlp 合并、视频处理 | `brew install ffmpeg`         |
+| ghostscript | camelot 表格提取      | `brew install ghostscript`    |
+| Chromium    | Playwright        | `playwright install chromium` |
+
 
 ---
 
 ## 环境变量
 
-详见 [`.env.example`](.env.example)。核心配置：
+详见 `[.env.example](.env.example)`。核心配置：
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=...
@@ -518,3 +546,4 @@ PRESIDIO_LANGUAGE=zh
 VIDEO_WORK_DIR=.data/video-work
 AUDIO_WORK_DIR=.data/audio-work
 ```
+

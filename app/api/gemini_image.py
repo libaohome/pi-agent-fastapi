@@ -16,6 +16,21 @@ async def gemini_image_status(_: Annotated[AuthContext, Depends(get_current_user
     return gemini_image.status()
 
 
+@router.post("/reload")
+async def reload_gemini_client(_: Annotated[AuthContext, Depends(get_current_user)]):
+    """更新 .env 中的 Cookie 后调用，重新加载配置并初始化 Gemini 客户端。"""
+    if not gemini_image.configured():
+        raise HTTPException(
+            503,
+            detail="Gemini 生图未配置，请在 .env 设置 GEMINI_SECURE_1PSID（__Secure-1PSIDTS 可选）",
+        )
+    try:
+        await gemini_image.restart()
+    except Exception as exc:
+        raise HTTPException(503, detail=f"Gemini 客户端重载失败: {exc}") from exc
+    return gemini_image.status()
+
+
 @router.post("/generate", response_model=GeminiImageGenerateResponse)
 async def generate_gemini_image(
     body: GeminiImageGenerateRequest,
@@ -24,7 +39,7 @@ async def generate_gemini_image(
     if not gemini_image.configured():
         raise HTTPException(
             503,
-            detail="Gemini 生图未配置，请在 .env 设置 GEMINI_SECURE_1PSID / GEMINI_SECURE_1PSIDTS",
+            detail="Gemini 生图未配置，请在 .env 设置 GEMINI_SECURE_1PSID（__Secure-1PSIDTS 可选）",
         )
     settings = get_settings()
     try:

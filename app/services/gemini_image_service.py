@@ -25,7 +25,7 @@ _FILE_ID_RE = re.compile(
 
 def configured() -> bool:
     settings = get_settings()
-    return bool(settings.gemini_secure_1psid and settings.gemini_secure_1psidts)
+    return bool(settings.gemini_secure_1psid)
 
 
 def is_ready() -> bool:
@@ -80,8 +80,9 @@ async def start() -> None:
 
     client_kwargs: dict[str, Any] = {
         "secure_1psid": settings.gemini_secure_1psid,
-        "secure_1psidts": settings.gemini_secure_1psidts,
     }
+    if settings.gemini_secure_1psidts:
+        client_kwargs["secure_1psidts"] = settings.gemini_secure_1psidts
     if settings.gemini_proxy:
         client_kwargs["proxy"] = settings.gemini_proxy
     client = gemini_mod.GeminiClient(**client_kwargs)
@@ -105,6 +106,23 @@ async def stop() -> None:
         _account_status_name = None
 
 
+async def restart() -> None:
+    """关闭并重新初始化客户端（更新 .env 中的 Cookie 后调用）。"""
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    await stop()
+    await start()
+
+
+def _cookie_fingerprint(value: str | None) -> str | None:
+    if not value:
+        return None
+    if len(value) <= 12:
+        return value[:4] + "..."
+    return f"{value[:8]}...{value[-6:]}"
+
+
 async def _safe_close(client: Any) -> None:
     if hasattr(client, "close"):
         try:
@@ -123,7 +141,7 @@ async def _ensure_client() -> Any:
             return _client
         if not configured():
             raise RuntimeError(
-                "Gemini 生图未配置，请在 .env 中设置 GEMINI_SECURE_1PSID / GEMINI_SECURE_1PSIDTS"
+                "Gemini 生图未配置，请在 .env 中设置 GEMINI_SECURE_1PSID（PSIDTS 可选）"
             )
         await start()
         if _client is None:
@@ -195,6 +213,11 @@ def status() -> dict[str, Any]:
         "proxy": bool(settings.gemini_proxy),
         "package_installed": try_import("gemini_webapi") is not None,
         "storage_dir": settings.gemini_image_dir,
+        "cookie_fingerprint": {
+            "secure_1psid": _cookie_fingerprint(settings.gemini_secure_1psid),
+            "secure_1psidts": _cookie_fingerprint(settings.gemini_secure_1psidts),
+            "psidts_required": False,
+        },
     }
 
 
